@@ -9,7 +9,13 @@
 .slide-up-enter-active,
 .slide-down-enter-active,
 .popup-slide-up-enter-active,
-.popup-slide-up-leave-active {
+.popup-slide-up-leave-active,
+.fade-slide-right-enter-active,
+.fade-slide-right-leave-active,
+.slide-right-enter-active,
+.slide-right-leave-active,
+.fade-enter-active,
+.fade-leave-active {
   transition: all 0.3s linear;
 }
 .slide-up-enter,
@@ -30,3 +36,30 @@
   transform: translate3d(0, 0, 0);
   opacity: 1;
 }
+.fade-slide-right-enter,
+.fade-slide-right-leave-to {
+  transform: translate3d(-100%, 0, 0);
+  opacity: 0;
+}
+.fade-slide-right-enter-to,
+.fade-slide-right-leave {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+}
+.slide-right-enter,
+.slide-right-leave-to {
+  transform: translate3d(-100%, 0, 0);
+}
+.slide-right-enter-to,
+.slide-right-leave-leave {
+  transform: translate3d(0, 0, 0);
+}
+.fade-enter,
+.fade-leave-to {
+  opacity: 0;
+}
+.fade-enter-to,
+.fade-leave {
+  opacity: 1;
+}
+

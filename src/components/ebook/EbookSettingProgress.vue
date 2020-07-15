@@ -36,36 +36,39 @@
 </template>
 <script>
 import { ebookMixin } from '@/utils/mixin'
-import { saveLocation, getReadTime } from '@/utils/localStorage'
+import { saveLocation } from '@/utils/localStorage'
 export default {
   mixins: [ebookMixin],
   computed: {
     getSectionName() {
-      if (this.bookAvailable) {
-        const sectionInfo = this.currentBook.section(this.section)
-        if (sectionInfo && sectionInfo.href) {
-          return this.currentBook.navigation.get(sectionInfo.href).label
-        }
-      }
-      return ''
+      // if (this.bookAvailable) {
+      //   const sectionInfo = this.currentBook.section(this.section)
+        
+      //   if (
+      //     sectionInfo &&
+      //     sectionInfo.href &&
+      //     this.currentBook &&
+      //     this.currentBook.navigation
+      //   ) {
+      //     console.log(this.currentBook.navigation)
+      //     return this.currentBook.navigation.get(sectionInfo.href).label
+      //   }
+      // }
+      // return ''
+      // return this.section >= 0 ? this.navigation[this.section].label : ''
+      return (this.navigation && this.navigation[this.section].label) || ''
     }
   },
   methods: {
-    getReadTimeText() {
-      return this.$t('book.haveRead').replace('$1', Math.ceil((getReadTime(this.fileName) || 0) / 60))
-    },
     displayProgress() {
       const cfi = this.currentBook.locations.cfiFromPercentage(
         this.progress / 100
       )
-      saveLocation(this.fileName, cfi)
-      return this.currentBook.rendition.display(cfi)
+      this.display(cfi)
     },
     onProgressChange(progress) {
       this.setProgress(progress).then(() => {
         return this.displayProgress()
-      }).then(() => {
-        this.updateSection()
       })
     },
     onProgressInput(progress) {
@@ -73,9 +76,7 @@ export default {
     },
     displaySection() {
       const sectionInfo = this.currentBook.section(this.section)
-      this.currentBook.rendition.display(sectionInfo.href).then(() => {
-        this.updateProgress()
-      })
+      this.display(sectionInfo.href)
     },
     prevSection() {
       if (this.section > 0 && this.bookAvailable) {

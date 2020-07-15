@@ -1,6 +1,6 @@
 import { mapGetters, mapActions } from 'vuex'
 import { themeList, setGlobalCss } from './book'
-import { saveLocation } from './localStorage'
+import { saveLocation, getReadTime, getBookmark } from './localStorage'
 
 export const ebookMixin = {
   computed: {
@@ -77,6 +77,40 @@ export const ebookMixin = {
     updateSection() {
       let currentLocation = this.currentBook.rendition.currentLocation()
       return this.setSection(currentLocation.start.index)
-    }
+    },
+    updateLocation() {
+      let currentLocation = this.currentBook.rendition.currentLocation()
+      if (currentLocation && currentLocation.start) {
+        saveLocation(this.fileName, currentLocation.start.cfi)
+        this.setProgress(Math.floor(currentLocation.start.percentage * 100))
+        this.setSection(currentLocation.start.index)
+        const bookmark = getBookmark(this.fileName)
+        if (bookmark) {
+          if (bookmark.some(item => item.cfi === currentLocation.start.cfi)) {
+            this.setIsBookmark(true)
+          } else {
+            this.setIsBookmark(false)
+          }
+        } else {
+          this.setIsBookmark(false)
+        }
+      }
+    },
+    display(target, cb) {
+      if (target) {
+        this.currentBook.rendition.display(target).then(() => {
+          this.updateLocation()
+          if (cb) cb()
+        })
+      } else {
+        this.currentBook.rendition.display().then(() => {
+          this.updateLocation()
+          if (cb) cb()
+        })
+      }
+    },
+    getReadTimeText() {
+      return this.$t('book.haveRead').replace('$1', Math.ceil((getReadTime(this.fileName) || 0) / 60))
+    },
   }
 }

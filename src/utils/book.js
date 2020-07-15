@@ -114,11 +114,14 @@ export function setGlobalCss(href) {
 }
 export function removeCss(href) {
   let links = document.querySelectorAll('link')
-  for(let i = links.length; i >= 0; i --) {
+  for (let i = links.length; i >= 0; i--) {
     const link = links[i]
     if (link && link.href && link.href === href) {
       link.parentNode.removeChild(link)
       return
     }
   }
+}
+export function flatten(array) {
+  return [].concat(...array.map(item => [].concat(item, ...flatten(item.subitems))))
 }

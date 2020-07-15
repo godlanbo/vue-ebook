@@ -1,6 +1,7 @@
 <template>
   <div class="ebook-reader">
     <div id="read"></div>
+    <div class="ebook-reader-mask" @click="onMaskClick" @touchmove="move" @touchend="moveEnd"></div>
   </div>
 </template>
 <script>
@@ -16,9 +17,15 @@ import {
   saveTheme,
   getLocation
 } from '@/utils/localStorage'
+import { flatten } from '@/utils/book'
 global.ePub = Epub
 export default {
   mixins: [ebookMixin],
+  data() {
+    return {
+      task: null
+    }
+  },
   mounted() {
     const fileName = this.$route.params.fileName.split('|').join('/')
     this.setFileName(fileName).then(() => {
@@ -26,11 +33,42 @@ export default {
     })
   },
   methods: {
+    move(e) {
+      if (this.task) {
+        return
+      }
+      this.task = setTimeout(() => {
+        let offsetY = 0
+        if (this.firstOffsetY) {
+          offsetY = e.changedTouches[0].clientY - this.firstOffsetY
+        } else {
+          this.firstOffsetY = e.changedTouches[0].clientY
+        }
+        this.setOffsetY(offsetY)
+        e.stopPropagation()
+        e.preventDefault()
+        this.task = null
+      }, 30)
+    },
+    moveEnd(e) {
+      this.setOffsetY(0)
+      this.firstOffsetY = 0
+    },
+    onMaskClick(e) {
+      let width = window.innerWidth
+      let offsetX = e.offsetX
+      if (offsetX > 0 && offsetX < 0.3 * width) {
+        this.prevPage()
+      } else if (offsetX > 0.7 * width && offsetX < width) {
+        this.nextPage()
+      } else {
+        this.toggleTitleAndMenu()
+      }
+    },
     prevPage() {
       if (this.rendition) {
         this.rendition.prev().then(() => {
-          this.updateProgress()
-          this.updateSection()
+          this.updateLocation()
         })
         this.hideTitleAndMenu()
       }
@@ -38,8 +76,7 @@ export default {
     nextPage() {
       if (this.rendition) {
         this.rendition.next().then(() => {
-          this.updateProgress()
-          this.updateSection()
+          this.updateLocation()
         })
         this.hideTitleAndMenu()
       }
@@ -96,12 +133,55 @@ export default {
           )
         })
         .then(res => {
-          this.updateProgress()
-          return this.updateSection()
-        })
-        .then(() => {
+          this.updateLocation()
           this.setBookAvailable(true)
         })
+    },
+    initGesture() {
+      this.rendition.on('touchstart', event => {
+        this.touchStartX = event.changedTouches[0].clientX
+        this.touchStartTime = event.timeStamp
+      })
+      this.rendition.on('touchend', event => {
+        const offsetX = event.changedTouches[0].clientX - this.touchStartX
+        const time = event.timeStamp - this.touchStartTime
+        if (time < 500 && offsetX > 40) {
+          this.prevPage()
+        } else if (time < 500 && offsetX < -40) {
+          this.nextPage()
+        } else {
+          this.toggleTitleAndMenu()
+        }
+        // event.preventDefault()
+        event.stopPropagation()
+      })
+    },
+    parseBook() {
+      this.book.loaded.cover
+        .then(cover => {
+          return this.book.archive.createUrl(cover)
+        })
+        .then(url => {
+          this.setCover(url)
+        })
+      this.book.loaded.metadata.then(metadata => {
+        this.setMetadata(metadata)
+      })
+      this.book.loaded.navigation.then(nav => {
+        let navigation = flatten(nav.toc)
+        function find(item, level = 0) {
+          return item.parent
+            ? find(
+                navigation.filter(navItem => navItem.id == item.parent)[0],
+                level + 1
+              )
+            : level
+        }
+        navigation.forEach(navItem => {
+          navItem.level = find(navItem)
+        })
+        this.setNavigation(navigation)
+      })
     },
     initBookInfo() {
       this.initFontSize()
@@ -121,33 +201,12 @@ export default {
       })
 
       let location = getLocation(this.fileName)
-      if (location) {
-        this.rendition.display(location).then(() => {
-          this.initBookInfo()
-        })
-      } else {
-        this.rendition.display().then(() => {
-          this.initBookInfo()
-        })
-      }
+      this.display(location, () => {
+        this.initBookInfo()
+      })
+      this.parseBook()
 
-      this.rendition.on('touchstart', event => {
-        this.touchStartX = event.changedTouches[0].clientX
-        this.touchStartTime = event.timeStamp
-      })
-      this.rendition.on('touchend', event => {
-        const offsetX = event.changedTouches[0].clientX - this.touchStartX
-        const time = event.timeStamp - this.touchStartTime
-        if (time < 500 && offsetX > 40) {
-          this.prevPage()
-        } else if (time < 500 && offsetX < -40) {
-          this.nextPage()
-        } else {
-          this.toggleTitleAndMenu()
-        }
-        // event.preventDefault()
-        event.stopPropagation()
-      })
+      // this.initGesture()
       this.rendition.hooks.content.register(contents => {
         contents.addStylesheet(
           `${process.env.VUE_APP_RES_BASE_URL}/fonts/cabin.css`
@@ -167,4 +226,18 @@ export default {
 }
 </script>
 <style lang="scss" scoped>
+@import '@/assets/style/global.scss';
+.ebook-reader {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  .ebook-reader-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+  }
+}
 </style>
