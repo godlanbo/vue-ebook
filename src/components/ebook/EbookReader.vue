@@ -132,7 +132,28 @@ export default {
             750 * (innerWidth / 350) * (getFontSize(this.fileName) / 16)
           )
         })
-        .then(res => {
+        .then(locations => {
+          this.navigation.forEach(nav => {
+            nav.pageList = []
+          })
+          locations.forEach(item => {
+            let loc = item.match(/\[(.*)\]!/)[1]
+            this.navigation.forEach(nav => {
+              let href = nav.href.match(/^(.*)\.html/)[1]
+              if (href === loc) {
+                nav.pageList.push(loc)
+              }
+            })
+          })
+          let currentPage = 1
+          this.navigation.forEach((nav, index) => {
+            if (index == 0) {
+              nav.page = 1
+            } else {
+              nav.page = currentPage
+            }
+            currentPage += nav.pageList.length + 1
+          })
           this.updateLocation()
           this.setBookAvailable(true)
         })

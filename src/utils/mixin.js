@@ -27,6 +27,9 @@ export const ebookMixin = {
     ]),
     themeList() {
       return themeList(this)
+    },
+    getSectionName() {
+      return (this.navigation && this.navigation[this.section].label) || ''
     }
   },
   methods: {
@@ -69,15 +72,6 @@ export const ebookMixin = {
           setGlobalCss(`${process.env.VUE_APP_RES_BASE_URL}/theme/theme_default.css`)
       }
     },
-    updateProgress() {
-      let currentLocation = this.currentBook.rendition.currentLocation()
-      saveLocation(this.fileName, currentLocation.start.cfi)
-      return this.setProgress(Math.floor(currentLocation.start.percentage * 100))
-    },
-    updateSection() {
-      let currentLocation = this.currentBook.rendition.currentLocation()
-      return this.setSection(currentLocation.start.index)
-    },
     updateLocation() {
       let currentLocation = this.currentBook.rendition.currentLocation()
       if (currentLocation && currentLocation.start) {
@@ -113,4 +107,29 @@ export const ebookMixin = {
       return this.$t('book.haveRead').replace('$1', Math.ceil((getReadTime(this.fileName) || 0) / 60))
     },
   }
+}
+export const storeHomeMixin = {
+  computed: {
+    ...mapGetters([
+      'offsetY',
+      'hotSearchOffsetY',
+      'flapCardVisible'
+    ])
+  },
+  methods: {
+    ...mapActions([
+      'setOffsetY',
+      'setHotSearchOffsetY',
+      'setFlapCardVisible'
+    ]),
+    showBookDetail(book) {
+      this.$router.push({
+        path: '/store/detail',
+        query: {
+          fileName: book.fileName,
+          category: book.categoryText
+        }
+      })
+    }
+  },
 }

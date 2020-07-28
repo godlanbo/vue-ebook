@@ -3,16 +3,20 @@
     class="ebook"
     :style="{'top': offsetY > 0 && !titleVisible && bookAvailable ? offsetY + 'px' : '0px'}"
   >
+    <ebook-header></ebook-header>
     <ebook-title></ebook-title>
     <ebook-reader></ebook-reader>
     <ebook-menu></ebook-menu>
     <ebook-bookmark></ebook-bookmark>
+    <ebook-footer></ebook-footer>
   </div>
 </template>
 <script>
 import EbookReader from '../../components/ebook/EbookReader'
 import EbookTitle from '../../components/ebook/EbookTitle'
 import EbookMenu from '../../components/ebook/EbookMenu'
+import EbookHeader from '../../components/ebook/EbookHeader'
+import EbookFooter from '../../components/ebook/EbookFooter'
 import EbookBookmark from '../../components/ebook/EbookBookmark'
 import { ebookMixin } from '@/utils/mixin'
 import { getReadTime, saveReadTime } from '@/utils/localStorage'
@@ -22,7 +26,9 @@ export default {
     EbookReader,
     EbookTitle,
     EbookMenu,
-    EbookBookmark
+    EbookBookmark,
+    EbookHeader,
+    EbookFooter
   },
   methods: {
     startLoopReadTime() {

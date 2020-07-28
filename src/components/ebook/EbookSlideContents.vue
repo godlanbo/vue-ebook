@@ -46,7 +46,7 @@
           :style="contentItemStyle(item)"
           @click="displayContents(item.href)"
         >{{item.label}}</span>
-        <span class="slide-contents-item-page"></span>
+        <span class="slide-contents-item-page">{{item.page}}</span>
       </div>
     </scroll>
     <scroll class="slide-search-list" v-show="searchVisible" :top="66" :bottom="41">
@@ -195,8 +195,8 @@ export default {
       }
       .slide-contents-book-author {
         margin-top: px2rem(5);
-        width: px2rem(150);
-        @include ellipsis;
+        // width: 100%;
+        @include ellipsis2(1);
         font-size: px2rem(12);
       }
     }
@@ -225,6 +225,11 @@ export default {
       &-label {
         flex: 1;
         @include ellipsis;
+      }
+      &-page {
+        flex: 0 0 px2rem(30);
+        font-size: px2rem(10);
+        @include right;
       }
     }
   }
