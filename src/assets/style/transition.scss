@@ -1,3 +1,5 @@
+@import 'mixin';
+
 .slide-up-enter-to,
 .slide-up-leave,
 .slide-down-enter-to,
@@ -20,7 +22,7 @@
 .title-move-leave-active,
 .hot-search-move-enter-active,
 .hot-search-move-leave-active {
-  transition: all 0.2s linear;
+  transition: all $animationTime linear;
 }
 .slide-up-enter,
 .slide-up-leave-to {

@@ -77,10 +77,16 @@ import Toast from '../../components/common/Toast'
 import { detail } from '../../api/store'
 import { px2rem, realPx } from '../../utils/utils'
 import Epub from 'epubjs'
+import { getLocalForage } from '../../utils/localForage'
+import { removeFromBookShelf, addToBookShelf } from '../../utils/store'
+import { getBookShelf, saveBookShelf } from '../../utils/localStorage'
+import { storeShelfMixin } from '../../utils/mixin'
+
 
 global.ePub = Epub
 
 export default {
+  mixins: [storeShelfMixin],
   components: {
     DetailTitle,
     Scroll,
@@ -124,12 +130,12 @@ export default {
       return this.metadata ? this.metadata.creator : ''
     },
     inBookShelf() {
-      if (this.bookItem && this.bookShelf) {
+      if (this.bookItem && this.shelfList) {
         const flatShelf = (function flatten(arr) {
           return [].concat(
             ...arr.map(v => (v.itemList ? [v, ...flatten(v.itemList)] : v))
           )
-        })(this.bookShelf).filter(item => item.type === 1)
+        })(this.shelfList).filter(item => item.type === 1)
         const book = flatShelf.filter(
           item => item.fileName === this.bookItem.fileName
         )
@@ -158,7 +164,16 @@ export default {
     }
   },
   methods: {
-    addOrRemoveShelf() {},
+    addOrRemoveShelf() {
+      if (this.inBookShelf) {
+        this.setShelfList(removeFromBookShelf(this.shelfList, this.bookItem)).then(() => {
+          saveBookShelf(this.shelfList)
+        })
+      } else {
+        addToBookShelf(this.bookItem)
+        this.setShelfList(getBookShelf())
+      }
+    },
     showToast(text) {
       this.toastText = text
       this.$refs.toast.show()
@@ -168,7 +183,26 @@ export default {
         path: `/ebook/${this.categoryText}|${this.fileName}`
       })
     },
-    trialListening() {},
+    trialListening() {
+      getLocalForage(this.bookItem.fileName, (err, blob) => {
+        if (!err && blob && blob instanceof Blob) {
+          this.$router.push({
+            path: '/store/speaking',
+            query: {
+              fileName: this.bookItem.fileName
+            }
+          })
+        } else {
+          this.$router.push({
+            path: '/store/speaking',
+            query: {
+              fileName: this.bookItem.fileName,
+              opf: this.opf
+            }
+          })
+        }
+      })
+    },
     read(item) {
       this.$router.push({
         path: `/ebook/${this.categoryText}|${this.fileName}`
@@ -273,6 +307,9 @@ export default {
   },
   mounted() {
     this.init()
+    if (!this.shelfList || this.shelfList.length === 0) {
+      this.getShelfList()
+    }
   }
 }
 </script>
@@ -319,8 +356,6 @@ export default {
             font-size: px2rem(14);
             color: #333;
           }
-        }
-        #preview {
         }
         .book-detail-content-item-wrapper {
           .book-detail-content-item {

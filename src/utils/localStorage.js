@@ -37,6 +37,14 @@ export function saveHome(home) {
   return setLocalStorage('home', home, 1800)
 }
 
+export function saveBookShelf(shelf) {
+  return setLocalStorage('shelf', shelf)
+}
+
+export function getBookShelf() {
+  return getLocalStorage('shelf')
+}
+
 export function getLocale() {
   return getLocalStorage('locale')
 }

@@ -15,21 +15,33 @@ import {
   saveFontSize,
   getTheme,
   saveTheme,
-  getLocation
+  getLocation,
 } from '@/utils/localStorage'
 import { flatten } from '@/utils/book'
+import { getLocalForage } from '../../utils/localForage'
 global.ePub = Epub
 export default {
   mixins: [ebookMixin],
   data() {
     return {
-      task: null
+      task: null,
     }
   },
   mounted() {
-    const fileName = this.$route.params.fileName.split('|').join('/')
-    this.setFileName(fileName).then(() => {
-      this.initEpub()
+    const file = this.$route.params.fileName.split('|').join('/')
+    const fileName = this.$route.params.fileName.split('|')[1]
+    getLocalForage(fileName, (err, blob) => {
+      if (!err && blob) {
+        this.setFileName(file).then(() => {
+          this.initEpub(blob)
+        })
+      } else {
+        this.setFileName(file).then(() => {
+          const resBaseUrl = process.env.VUE_APP_RES_BASE_URL
+          const epubUrl = `${resBaseUrl}/epub/${this.fileName}.epub`
+          this.initEpub(epubUrl)
+        })
+      }
     })
   },
   methods: {
@@ -46,7 +58,6 @@ export default {
         }
         this.setOffsetY(offsetY)
         e.stopPropagation()
-        e.preventDefault()
         this.task = null
       }, 30)
     },
@@ -120,7 +131,7 @@ export default {
       this.setDefaultTheme(defaultTheme).then(() => {
         this.initGlobalCss()
       })
-      this.themeList.forEach(theme => {
+      this.themeList.forEach((theme) => {
         this.rendition.themes.register(theme.name, theme.style)
       })
       this.rendition.themes.select(defaultTheme)
@@ -132,14 +143,14 @@ export default {
             750 * (innerWidth / 350) * (getFontSize(this.fileName) / 16)
           )
         })
-        .then(locations => {
-          this.navigation.forEach(nav => {
+        .then((locations) => {
+          this.navigation.forEach((nav) => {
             nav.pageList = []
           })
-          locations.forEach(item => {
+          locations.forEach((item) => {
             let loc = item.match(/\[(.*)\]!/)[1]
-            this.navigation.forEach(nav => {
-              let href = nav.href.match(/^(.*)\.html/)[1]
+            this.navigation.forEach((nav) => {
+              let href = nav.href.match(/^(.*)\.html$/)
               if (href === loc) {
                 nav.pageList.push(loc)
               }
@@ -159,11 +170,11 @@ export default {
         })
     },
     initGesture() {
-      this.rendition.on('touchstart', event => {
+      this.rendition.on('touchstart', (event) => {
         this.touchStartX = event.changedTouches[0].clientX
         this.touchStartTime = event.timeStamp
       })
-      this.rendition.on('touchend', event => {
+      this.rendition.on('touchend', (event) => {
         const offsetX = event.changedTouches[0].clientX - this.touchStartX
         const time = event.timeStamp - this.touchStartTime
         if (time < 500 && offsetX > 40) {
@@ -179,26 +190,26 @@ export default {
     },
     parseBook() {
       this.book.loaded.cover
-        .then(cover => {
+        .then((cover) => {
           return this.book.archive.createUrl(cover)
         })
-        .then(url => {
+        .then((url) => {
           this.setCover(url)
         })
-      this.book.loaded.metadata.then(metadata => {
+      this.book.loaded.metadata.then((metadata) => {
         this.setMetadata(metadata)
       })
-      this.book.loaded.navigation.then(nav => {
+      this.book.loaded.navigation.then((nav) => {
         let navigation = flatten(nav.toc)
         function find(item, level = 0) {
           return item.parent
             ? find(
-                navigation.filter(navItem => navItem.id == item.parent)[0],
+                navigation.filter((navItem) => navItem.id == item.parent)[0],
                 level + 1
               )
             : level
         }
-        navigation.forEach(navItem => {
+        navigation.forEach((navItem) => {
           navItem.level = find(navItem)
         })
         this.setNavigation(navigation)
@@ -208,17 +219,14 @@ export default {
       this.initFontSize()
       this.initFontFamily()
       this.initTheme()
-      this.initProgressAndSection()
     },
-    initEpub() {
-      const resBaseUrl = process.env.VUE_APP_RES_BASE_URL
-      const epubUrl = `${resBaseUrl}/epub/${this.fileName}.epub`
-      this.book = new Epub(epubUrl)
+    initEpub(url) {
+      this.book = new Epub(url)
       this.setCurrentBook(this.book)
       this.rendition = this.book.renderTo('read', {
         width: innerWidth,
         height: innerHeight,
-        method: 'default'
+        method: 'default',
       })
 
       let location = getLocation(this.fileName)
@@ -226,9 +234,10 @@ export default {
         this.initBookInfo()
       })
       this.parseBook()
+      this.initProgressAndSection()
 
       // this.initGesture()
-      this.rendition.hooks.content.register(contents => {
+      this.rendition.hooks.content.register((contents) => {
         contents.addStylesheet(
           `${process.env.VUE_APP_RES_BASE_URL}/fonts/cabin.css`
         )
@@ -242,8 +251,8 @@ export default {
           `${process.env.VUE_APP_RES_BASE_URL}/fonts/tangerine.css`
         )
       })
-    }
-  }
+    },
+  },
 }
 </script>
 <style lang="scss" scoped>

@@ -81,7 +81,11 @@ export default {
       this.setFlapCardVisible(true)
     },
     back() {
-      this.hideHotSearch()
+      if (this.hotSearchVisible) {
+        this.hideHotSearch()
+      } else {
+        this.$router.push('/store/shelf')
+      }
     },
     hideHotSearch() {
       if (this.offsetY > 0) {

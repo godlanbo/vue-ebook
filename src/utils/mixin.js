@@ -1,6 +1,8 @@
 import { mapGetters, mapActions } from 'vuex'
 import { themeList, setGlobalCss } from './book'
-import { saveLocation, getReadTime, getBookmark } from './localStorage'
+import { saveLocation, getReadTime, getBookmark, getBookShelf, saveBookShelf } from './localStorage'
+import { gotoBookDetail, appendAddToShelf, removeAddFromShelf, computedId } from './store'
+import { shelf } from '../api/store'
 
 export const ebookMixin = {
   computed: {
@@ -123,13 +125,78 @@ export const storeHomeMixin = {
       'setFlapCardVisible'
     ]),
     showBookDetail(book) {
-      this.$router.push({
-        path: '/store/detail',
-        query: {
-          fileName: book.fileName,
-          category: book.categoryText
-        }
-      })
+      gotoBookDetail(this, book)
     }
   },
+}
+export const storeShelfMixin = {
+  computed: {
+    ...mapGetters([
+      'isEditMode',
+      'shelfList',
+      'shelfSelected',
+      'shelfTitleVisible',
+      'offsetY',
+      'shelfCategory',
+      'currentType'
+    ])
+  },
+  methods: {
+    ...mapActions([
+      'setIsEditMode',
+      'setShelfList',
+      'setShelfSelected',
+      'setShelfTitleVisible',
+      'setOffsetY',
+      'setShelfCategory',
+      'setCurrentType'
+    ]),
+    showBookDetail(book) {
+      gotoBookDetail(this, book)
+    },
+    getCategoryList(title) {
+      this.getShelfList().then(() => {
+        let categoryList = this.shelfList.filter(book => book.type === 2 && book.title === title)[0]
+        this.setShelfCategory(categoryList)
+      })
+    },
+    getShelfList() {
+      let shelfList = getBookShelf()
+      if (!shelfList) {
+        shelf().then((res) => {
+          if (res.status === 200) {
+            shelfList = appendAddToShelf(res.data.bookList)
+            saveBookShelf(shelfList)
+            return this.setShelfList(shelfList)
+          }
+        })
+      } else {
+        return this.setShelfList(shelfList)
+      }
+    },
+    moveOutOfGroup(cb) {
+      this.setShelfList(
+        this.shelfList.map((book) => {
+          if (book.itemList && book.type === 2) {
+            book.itemList = book.itemList.filter((subBook) => {
+              return !subBook.selected
+            })
+          }
+          return book
+        })
+      )
+        .then(() => {
+          let list = removeAddFromShelf(this.shelfList)
+          // debugger
+          list = list.concat(this.shelfSelected)
+          list = appendAddToShelf(list)
+          list = computedId(list)
+          return this.setShelfList(list)
+        })
+        .then(() => {
+          this.simpleToast(this.$t('shelf.moveBookOutSuccess'))
+          if (cb) cb()
+        })
+    }
+  }
 }

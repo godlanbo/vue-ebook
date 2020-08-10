@@ -23,7 +23,16 @@ const routes = [
     path: '/store',
     redirect: '/store/home',
     component: () => import('../views/store/index.vue'),
+    redirect: '/store/shelf',
     children: [
+      {
+        path: 'shelf',
+        component: () => import('../views/store/StoreShelf.vue')
+      },
+      {
+        path: 'category',
+        component: () => import('../views/store/StoreCategory.vue')
+      },
       {
         path: 'home',
         component: () => import('../views/store/StoreHome.vue')
@@ -35,6 +44,10 @@ const routes = [
       {
         path: 'detail',
         component: () => import('../views/store/StoreDetail.vue')
+      },
+      {
+        path: 'speaking',
+        component: () => import('../views/store/StoreSpeaking.vue')
       }
     ]
   }
